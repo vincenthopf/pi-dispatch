@@ -1,6 +1,6 @@
 {
 	"name": "pi-dispatch",
-	"version": "1.0.2",
+	"version": "1.0.3",
 	"description": "Dispatch requests across multiple ChatGPT Codex OAuth accounts for pi",
 	"license": "MIT",
 	"type": "module",
