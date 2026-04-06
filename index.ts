@@ -199,6 +199,31 @@ function formatResetAt(resetAt?: number): string {
 	return `in ${diffDays}d`;
 }
 
+async function fetchAccountEmail(
+	accessToken: string,
+): Promise<string | undefined> {
+	const { controller, clear } = createTimeoutController(
+		undefined,
+		USAGE_REQUEST_TIMEOUT_MS,
+	);
+	try {
+		const response = await fetch("https://chatgpt.com/backend-api/me", {
+			headers: {
+				Authorization: `Bearer ${accessToken}`,
+				Accept: "application/json",
+			},
+			signal: controller.signal,
+		});
+		if (!response.ok) return undefined;
+		const data = (await response.json()) as { email?: string };
+		return data.email || undefined;
+	} catch {
+		return undefined;
+	} finally {
+		clear();
+	}
+}
+
 async function fetchCodexUsage(
 	accessToken: string,
 	accountId: string | undefined,
@@ -706,20 +731,10 @@ export default function dispatchExtension(pi: ExtensionAPI) {
 			args: string,
 			ctx: ExtensionCommandContext,
 		): Promise<void> => {
-			const email = args.trim();
-			if (!email) {
-				ctx.ui.notify(
-					"Please provide an email/identifier: /dispatch-login my@email.com",
-					"error",
-				);
-				return;
-			}
+			const explicitLabel = args.trim() || undefined;
 
 			try {
-				ctx.ui.notify(
-					`Starting login for ${email}... Check your browser.`,
-					"info",
-				);
+				ctx.ui.notify("Starting login... Check your browser.", "info");
 
 				const creds = await loginOpenAICodex({
 					onAuth: ({ url }) => {
@@ -730,8 +745,16 @@ export default function dispatchExtension(pi: ExtensionAPI) {
 					onPrompt: async ({ message }) => (await ctx.ui.input(message)) || "",
 				});
 
-				accountManager.addOrUpdateAccount(email, creds);
-				ctx.ui.notify(`Successfully logged in as ${email}`, "info");
+				let label = explicitLabel;
+				if (!label) {
+					label = await fetchAccountEmail(creds.access);
+				}
+				if (!label) {
+					label = `account-${accountManager.getAccounts().length + 1}`;
+				}
+
+				accountManager.addOrUpdateAccount(label, creds);
+				ctx.ui.notify(`Successfully logged in as ${label}`, "info");
 			} catch (e) {
 				ctx.ui.notify(`Login failed: ${getErrorMessage(e)}`, "error");
 			}

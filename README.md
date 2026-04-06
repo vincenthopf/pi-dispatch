@@ -29,15 +29,17 @@ pi -e ./index.ts
 1. Add at least one account:
 
    ```
-   /dispatch-login your@email.com
+   /dispatch-login
    ```
+
+   Optionally provide a label: `/dispatch-login work-account`
 
 2. Use Codex normally. When a quota window is hit, Dispatch will rotate to another available account automatically.
 
 ## Commands
 
-- `/dispatch-login <email>`
-  - Adds/updates an account in the rotation pool.
+- `/dispatch-login [label]`
+  - Adds/updates an account in the rotation pool. Label is optional (auto-assigns `account-1`, etc.).
 - `/dispatch-use`
   - Manually pick an account for the current session (until rotation clears it).
 - `/dispatch-status`
